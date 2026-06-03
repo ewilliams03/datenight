@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>A question for you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Hanken+Grotesk:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f8f1e6;
+    --ink:#33211d;
+    --ink-soft:rgba(51,33,29,.60);
+    --ink-faint:rgba(51,33,29,.40);
+    --accent:#c7553f;          /* terracotta */
+    --accent-soft:#da6a4f;
+    --rose:#b8455a;
+    --line:rgba(51,33,29,.12);
+    --surface:rgba(255,255,255,.55);
+    --surface-2:rgba(255,255,255,.85);
+    --shadow:0 30px 70px -28px rgba(120,60,40,.32);
+    --ease-out:cubic-bezier(.23,1,.32,1);
+    --ease-in-out:cubic-bezier(.77,0,.175,1);
+    --ease-flee:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    color:var(--ink);
+    min-height:100dvh;
+    overflow-x:hidden;
+    background:var(--bg);
+    position:relative;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 50% -12%, rgba(233,160,120,.40), transparent 55%),
+      radial-gradient(85% 70% at 88% 112%, rgba(199,85,90,.18), transparent 60%),
+      radial-gradient(70% 60% at 4% 102%, rgba(247,205,165,.34), transparent 60%),
+      linear-gradient(180deg,#fcf6ec 0%, #f7efe2 50%, #f3e9da 100%);
+  }
+  body::after{
+    content:""; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.035; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ambient drifting blush motes */
+  .ambient{position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden;}
+  .mote{position:absolute; border-radius:50%; background:radial-gradient(circle, rgba(199,85,63,.5), rgba(199,85,63,0) 70%); opacity:0; animation:drift linear infinite;}
+  @keyframes drift{
+    0%{opacity:0; transform:translateY(20px) scale(.7);}
+    15%{opacity:.45;}
+    85%{opacity:.35;}
+    100%{opacity:0; transform:translateY(-90vh) scale(1.1);}
+  }
+
+  .app{position:relative; z-index:3; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:32px 20px;}
+  .screen{display:none; width:100%; max-width:660px;}
+  .screen.active{display:block;}
+  /* Landing fits the screen exactly — no scrolling */
+  body:has(#screen-ask.active){overflow:hidden;}
+  body:has(#screen-ask.active) .app{height:100dvh; min-height:0; padding:20px;}
+
+  .card{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:26px;
+    padding:48px 42px;
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+  }
+  .card::before{
+    content:""; position:absolute; inset:0 0 auto 0; height:1px; border-radius:26px 26px 0 0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+  }
+  .card.landing{text-align:left; padding:44px 42px;}
+
+  .reveal > *{opacity:0; transform:translateY(14px); animation:rise .8s var(--ease-out) forwards;}
+  .reveal > *:nth-child(1){animation-delay:.05s}
+  .reveal > *:nth-child(2){animation-delay:.16s}
+  .reveal > *:nth-child(3){animation-delay:.27s}
+  @keyframes rise{to{opacity:1; transform:none;}}
+  @keyframes fadeScale{from{opacity:0; transform:scale(.96);} to{opacity:1; transform:none;}}
+  .screen.active .card{animation:fadeScale .6s var(--ease-out) both;}
+
+  .eyebrow{
+    font-size:12px; letter-spacing:.34em; text-transform:uppercase;
+    color:var(--accent); font-weight:600; margin:0 0 20px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .eyebrow::after{content:""; height:1px; flex:1; background:linear-gradient(90deg,var(--line),transparent);}
+
+  h1.title{
+    font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:340;
+    font-size:clamp(40px,8.4vw,72px); line-height:1.02; letter-spacing:-.015em;
+    margin:0 0 18px; color:var(--ink);
+  }
+  .card.landing h1.title{font-size:clamp(36px,6.8vw,62px); margin:0 0 28px;}
+  h1.title .accent{font-style:italic; font-weight:380; color:var(--accent);}
+  .sub{font-size:clamp(15px,2.6vw,18px); line-height:1.55; color:var(--ink-soft); margin:0 0 36px; max-width:46ch;}
+
+  .btn{
+    font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:16px;
+    border:none; cursor:pointer; padding:15px 32px; border-radius:13px; letter-spacing:.01em;
+    transition:transform .16s var(--ease-out), background-color .25s ease, box-shadow .25s ease, color .25s ease, border-color .25s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-yes{color:#fff; background:var(--accent); box-shadow:0 14px 30px -10px rgba(199,85,63,.6);}
+  @media (hover:hover) and (pointer:fine){
+    .btn-yes:hover{background:var(--accent-soft); box-shadow:0 18px 40px -10px rgba(199,85,63,.7); transform:translateY(-2px);}
+    .btn-yes:hover:active{transform:translateY(-2px) scale(.97);}
+  }
+  .btn-no{color:var(--ink-soft); background:var(--surface-2); border:1px solid var(--line); position:relative; z-index:6; will-change:left,top;}
+
+  .choices{display:flex; gap:16px; align-items:center; flex-wrap:wrap; min-height:60px;}
+  .full-btn{width:100%; padding:17px 30px;}
+
+  .qhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .qcount{font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;}
+  .progress-wrap{height:2px; background:var(--line); border-radius:99px; overflow:hidden; margin-bottom:34px;}
+  .progress-bar{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--rose)); transition:width .55s var(--ease-out);}
+
+  .question{
+    font-family:'Fraunces',serif; font-weight:340; font-optical-sizing:auto;
+    font-size:clamp(28px,6.2vw,42px); line-height:1.08; letter-spacing:-.01em; margin:0 0 30px; color:var(--ink);
+  }
+
+  .options{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:520px){.options{grid-template-columns:1fr;}}
+  .option{
+    text-align:left; background:var(--surface-2); border:1px solid var(--line); border-radius:15px;
+    padding:18px; cursor:pointer; font-family:'Hanken Grotesk',sans-serif; font-size:15.5px; font-weight:500;
+    color:var(--ink); display:flex; gap:14px; align-items:center; line-height:1.3;
+    transition:transform .18s var(--ease-out), border-color .22s ease, background-color .22s ease, box-shadow .22s ease;
+  }
+  .option .idx{font-family:'Fraunces',serif; font-style:italic; font-weight:400; font-size:16px; color:var(--accent); width:22px; flex:0 0 auto; opacity:.9;}
+  @media (hover:hover) and (pointer:fine){
+    .option:hover{transform:translateY(-2px); border-color:rgba(199,85,63,.5); box-shadow:0 12px 26px -16px rgba(120,60,40,.5);}
+  }
+  .option.selected{border-color:var(--accent); background:rgba(199,85,63,.10); box-shadow:0 12px 30px -14px rgba(199,85,63,.7);}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:520px){.grid2{grid-template-columns:1fr;}}
+  .field{margin-bottom:16px; text-align:left;}
+  .field label{display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin-bottom:9px;}
+  .field input, .field textarea{
+    width:100%; font-family:'Hanken Grotesk',sans-serif; font-size:16px; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line); border-radius:13px; padding:14px 15px;
+    outline:none; color-scheme:light;
+    transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+  .field input::placeholder, .field textarea::placeholder{color:var(--ink-faint);}
+  .field input:focus, .field textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(199,85,63,.15);}
+  .field textarea{resize:vertical; min-height:96px;}
+
+  .muted-note{font-size:12.5px; color:var(--ink-faint); margin-top:16px; text-align:center;}
+  .back{background:none; border:none; color:var(--ink-faint); font-family:'Hanken Grotesk'; font-weight:600; cursor:pointer; margin-top:24px; font-size:13px; letter-spacing:.04em; transition:color .2s ease; padding:6px 0;}
+  .back:hover{color:var(--accent);}
+
+  .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:9px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .error{color:var(--rose); font-weight:500; font-size:14px; margin-top:14px; display:none; text-align:center;}
+  .mono-line{height:1px; width:54px; background:var(--accent); margin:0 0 26px; opacity:.8;}
+
+  /* shadcn-style popover calendar (vanilla) */
+  .datepicker{position:relative;}
+  .dp-trigger{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-family:'Hanken Grotesk',sans-serif; font-size:16px; color:var(--ink); text-align:left;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:13px; padding:14px 15px; cursor:pointer;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .dp-trigger.placeholder #dpValue{color:var(--ink-faint);}
+  .dp-trigger:focus, .dp-trigger.open{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(199,85,63,.15);}
+  .dp-trigger .cal-ico{width:18px; height:18px; flex:0 0 auto; color:var(--ink-soft);}
+  .dp-pop{
+    position:absolute; z-index:30; top:calc(100% + 8px); left:0; width:296px; max-width:94vw;
+    background:#fffaf2; border:1px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 26px 54px -18px rgba(120,60,40,.45);
+    transform-origin:top left; transition:opacity .16s var(--ease-out), transform .16s var(--ease-out);
+  }
+  .dp-pop[hidden]{display:none;}
+  .dp-pop.opening, .dp-pop.closing{opacity:0; transform:scale(.95);}
+  .dp-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .dp-title{font-family:'Hanken Grotesk'; font-weight:600; font-size:14px; color:var(--ink);}
+  .dp-nav{width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer; color:var(--ink-soft); transition:background-color .15s ease, color .15s ease, opacity .15s ease; opacity:.7;}
+  .dp-nav:hover{background:rgba(199,85,63,.08); color:var(--accent); opacity:1;}
+  .dp-nav svg{width:16px; height:16px;}
+  .dp-dow{display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px;}
+  .dp-dow span{text-align:center; font-size:11px; color:var(--ink-faint); font-weight:600; padding:2px 0;}
+  .dp-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  .dp-cell{height:36px; border:none; background:transparent; border-radius:9px; font-family:'Hanken Grotesk'; font-size:13.5px; color:var(--ink); cursor:pointer; transition:background-color .15s ease, color .15s ease, transform .12s var(--ease-out);}
+  .dp-cell.empty{visibility:hidden; cursor:default;}
+  .dp-cell:hover:not(.disabled):not(.selected){background:rgba(199,85,63,.10);}
+  .dp-cell.today:not(.selected){background:rgba(199,85,63,.12); color:var(--accent); font-weight:600;}
+  .dp-cell.selected{background:var(--accent); color:#fff; font-weight:600;}
+  .dp-cell.selected:active{transform:scale(.94);}
+  .dp-cell.disabled{color:var(--ink-faint); opacity:.4; cursor:not-allowed;}
+
+  /* time picker — matches the date picker */
+  .timepicker{position:relative;}
+  .tp-pop{width:200px; max-height:232px; overflow-y:auto;}
+  .dp-trigger.placeholder #tpValue{color:var(--ink-faint);}
+  .tp-list{display:flex; flex-direction:column; gap:2px;}
+  .tp-opt{width:100%; text-align:left; border:none; background:transparent; border-radius:9px; font-family:'Hanken Grotesk'; font-size:14px; color:var(--ink); cursor:pointer; padding:9px 12px; transition:background-color .15s ease, color .15s ease;}
+  .tp-opt:hover:not(.selected){background:rgba(199,85,63,.10);}
+  .tp-opt.selected{background:var(--accent); color:#fff; font-weight:600;}
+
+  .bloom{position:fixed; left:50%; top:42%; z-index:4; pointer-events:none;}
+  .shard{position:absolute; width:9px; height:9px; border-radius:2px; opacity:0;}
+
+  @media (prefers-reduced-motion:reduce){
+    .mote{display:none;}
+    .reveal > *{animation-duration:.01ms; opacity:1; transform:none;}
+    .screen.active .card{animation:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="ambient" id="ambient"></div>
+
+  <div class="app">
+
+    <!-- ============ SCREEN 1: THE ASK ============ -->
+    <section class="screen active" id="screen-ask">
+      <div class="card landing reveal">
+        <h1 class="title">Mackenzie, will you go on a <span class="accent">date</span> with me?</h1>
+        <div class="choices" id="choices">
+          <button class="btn btn-yes" id="yesBtn">Yes</button>
+          <button class="btn btn-no" id="noBtn">No</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 2: CELEBRATION ============ -->
+    <section class="screen" id="screen-celebrate">
+      <div class="card reveal">
+        <h1 class="title">Then it's <span class="accent">settled.</span></h1>
+        <button class="btn btn-yes full-btn" id="startQuiz">Let's plan it</button>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 3: QUIZ ============ -->
+    <section class="screen" id="screen-quiz">
+      <div class="card">
+        <div class="qhead">
+          <span class="qcount" id="qcount">01 / 04</span>
+          <span class="qcount" id="qlabel">The vibe</span>
+        </div>
+        <div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+        <h2 class="question" id="questionText">…</h2>
+        <div class="options" id="options"></div>
+        <button class="back" id="quizBack">← back</button>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 4: SCHEDULE ============ -->
+    <section class="screen" id="screen-schedule">
+      <div class="card">
+        <p class="eyebrow">The last detail</p>
+        <h1 class="title" style="font-size:clamp(34px,7.2vw,52px);">When works <span class="accent">for you?</span></h1>
+        <div class="mono-line"></div>
+        <div class="grid2">
+          <div class="field">
+            <label for="dpTrigger">Preferred date</label>
+            <div class="datepicker" id="datepicker">
+              <button type="button" class="dp-trigger placeholder" id="dpTrigger" aria-haspopup="dialog" aria-expanded="false">
+                <span id="dpValue">Select a date</span>
+                <svg class="cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              </button>
+              <div class="dp-pop" id="dpPop" role="dialog" aria-label="Choose a date" hidden>
+                <div class="dp-head">
+                  <button type="button" class="dp-nav" id="dpPrev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                  <span class="dp-title" id="dpTitle"></span>
+                  <button type="button" class="dp-nav" id="dpNext" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                </div>
+                <div class="dp-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+                <div class="dp-grid" id="dpGrid"></div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tpTrigger">Preferred time</label>
+            <div class="timepicker" id="timepicker">
+              <button type="button" class="dp-trigger placeholder" id="tpTrigger" aria-haspopup="dialog" aria-expanded="false">
+                <span id="tpValue">Select a time</span>
+                <svg class="cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+              </button>
+              <div class="tp-pop dp-pop" id="tpPop" role="dialog" aria-label="Choose a time" hidden>
+                <div class="tp-list" id="tpList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="phone">Best number to reach you</label>
+          <input type="tel" id="phone" inputmode="tel" placeholder="(555) 123 4567" />
+        </div>
+        <div class="field">
+          <label for="note">A note for Ethan</label>
+          <textarea id="note" placeholder="Type here"></textarea>
+        </div>
+        <button class="btn btn-yes full-btn" id="submitBtn">Send it to him</button>
+        <p class="error" id="errorMsg"></p>
+        <p class="muted-note">It stays between us.</p>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 5: DONE ============ -->
+    <section class="screen" id="screen-done">
+      <div class="card reveal">
+        <p class="eyebrow">Consider it in motion</p>
+        <h1 class="title">It's <span class="accent">official.</span></h1>
+        <p class="sub" id="doneSub">Everything's on its way to me. I'll reach out soon to lock in the details. Until then, just look forward to it.</p>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+/* ---------------- CONFIG ---------------- */
+const SEND_ENDPOINT = "/api/send";
+
+/* ---------------- QUIZ (mysterious — reveals nothing) ---------------- */
+const QUESTIONS = [
+  { label:"The vibe", q:"If the evening had a dress code, what are we wearing?", key:"dress_code",
+    options:["Dressed up — make it an occasion","Easy and casual, nothing fussy","Smart but relaxed","Surprise me, I'll match the night"]},
+  { label:"The drink", q:"Choose how the night should taste.", key:"drinks",
+    options:["Cocktails, low light, good conversation","Coffee, cocoa, something warm","Something sparkling and a little fun","No drinks needed — just the company"]},
+  { label:"The table", q:"How should we feed the evening?", key:"food",
+    options:["A long, unhurried dinner","Small plates we share","Honestly, lead with dessert","Skip the meal — more time for the rest"]},
+  { label:"The energy", q:"What kind of night are you craving?", key:"energy",
+    options:["Slow, romantic, a little dreamy","Playful, with a hint of competition","Spontaneous — let's just wander","Quiet and close, just us"]},
+];
+const IDX = ["A","B","C","D"];
+const answers = {};
+let qIndex = 0;
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------------- POPOVER CALENDAR (shadcn-style, vanilla) ---------------- */
+const DP = (function(){
+  const trigger=document.getElementById('dpTrigger');
+  const valueEl=document.getElementById('dpValue');
+  const pop=document.getElementById('dpPop');
+  const grid=document.getElementById('dpGrid');
+  const titleEl=document.getElementById('dpTitle');
+  const wrap=document.getElementById('datepicker');
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const today=new Date(); today.setHours(0,0,0,0);
+  let view={y:today.getFullYear(), m:today.getMonth()};
+  let selected=null;
+
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const fmt=d=>d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+
+  function render(){
+    titleEl.textContent=MONTHS[view.m]+' '+view.y;
+    grid.innerHTML='';
+    const startDow=new Date(view.y,view.m,1).getDay();
+    const days=new Date(view.y,view.m+1,0).getDate();
+    for(let i=0;i<startDow;i++){ const e=document.createElement('div'); e.className='dp-cell empty'; grid.appendChild(e); }
+    for(let day=1;day<=days;day++){
+      const d=new Date(view.y,view.m,day); d.setHours(0,0,0,0);
+      const b=document.createElement('button'); b.type='button'; b.className='dp-cell'; b.textContent=day;
+      if(d.getTime()===today.getTime()) b.classList.add('today');
+      if(d<today){ b.classList.add('disabled'); b.disabled=true; }
+      if(selected && iso(d)===iso(selected)) b.classList.add('selected');
+      b.addEventListener('click',()=>{ selected=d; valueEl.textContent=fmt(d); trigger.classList.remove('placeholder'); render(); close(); });
+      grid.appendChild(b);
+    }
+  }
+  function open(){ pop.hidden=false; pop.classList.add('opening'); requestAnimationFrame(()=>pop.classList.remove('opening')); trigger.classList.add('open'); trigger.setAttribute('aria-expanded','true'); }
+  function close(){ if(pop.hidden) return; pop.classList.add('closing'); trigger.classList.remove('open'); trigger.setAttribute('aria-expanded','false'); setTimeout(()=>{ pop.hidden=true; pop.classList.remove('closing'); },160); }
+
+  trigger.addEventListener('click', ()=>{ pop.hidden ? open() : close(); });
+  document.getElementById('dpPrev').addEventListener('click', ()=>{ view.m--; if(view.m<0){view.m=11;view.y--;} render(); });
+  document.getElementById('dpNext').addEventListener('click', ()=>{ view.m++; if(view.m>11){view.m=0;view.y++;} render(); });
+  document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  function setDefault(){
+    const d=new Date(); d.setDate(d.getDate()+3); d.setHours(0,0,0,0);
+    selected=d; view={y:d.getFullYear(), m:d.getMonth()};
+    valueEl.textContent=fmt(d); trigger.classList.remove('placeholder'); render();
+  }
+  render();
+  return { setDefault, value:()=> selected ? iso(selected) : '' };
+})();
+
+/* ---------------- POPOVER TIME PICKER (matches the calendar) ---------------- */
+const TP = (function(){
+  const trigger=document.getElementById('tpTrigger');
+  const valueEl=document.getElementById('tpValue');
+  const pop=document.getElementById('tpPop');
+  const list=document.getElementById('tpList');
+  const wrap=document.getElementById('timepicker');
+  let selected=null; // "HH:MM" 24h
+  const to12=(hhmm)=>{ const [H,M]=hhmm.split(':').map(Number); const ap=H<12?'AM':'PM'; let h=H%12; if(h===0)h=12; return h+':'+String(M).padStart(2,'0')+' '+ap; };
+  const SLOTS=[]; for(let h=0;h<24;h++){ for(let m=0;m<60;m+=30){ SLOTS.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')); } }
+
+  function render(){
+    list.innerHTML='';
+    SLOTS.forEach(s=>{
+      const b=document.createElement('button'); b.type='button'; b.className='tp-opt'; b.textContent=to12(s);
+      if(s===selected) b.classList.add('selected');
+      b.addEventListener('click',()=>{ selected=s; valueEl.textContent=to12(s); trigger.classList.remove('placeholder'); render(); close(); });
+      list.appendChild(b);
+    });
+  }
+  function open(){ pop.hidden=false; pop.classList.add('opening'); requestAnimationFrame(()=>pop.classList.remove('opening')); trigger.classList.add('open'); trigger.setAttribute('aria-expanded','true'); const sel=list.querySelector('.selected'); if(sel) sel.scrollIntoView({block:'center'}); }
+  function close(){ if(pop.hidden) return; pop.classList.add('closing'); trigger.classList.remove('open'); trigger.setAttribute('aria-expanded','false'); setTimeout(()=>{ pop.hidden=true; pop.classList.remove('closing'); },160); }
+
+  trigger.addEventListener('click', ()=>{ pop.hidden ? open() : close(); });
+  document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  function setDefault(){ selected='19:00'; valueEl.textContent=to12(selected); trigger.classList.remove('placeholder'); render(); }
+  render();
+  return { setDefault, value:()=> selected||'' };
+})();
+
+/* ---------------- AMBIENT MOTES ---------------- */
+(function(){
+  const layer=document.getElementById('ambient'); const N=15;
+  for(let i=0;i<N;i++){
+    const m=document.createElement('div'); m.className='mote';
+    const s=3+Math.random()*6; m.style.width=s+'px'; m.style.height=s+'px';
+    m.style.left=Math.random()*100+'vw'; m.style.bottom=(-10-Math.random()*20)+'px';
+    m.style.animationDuration=(15+Math.random()*16)+'s'; m.style.animationDelay=(-Math.random()*22)+'s';
+    layer.appendChild(m);
+  }
+})();
+
+/* ---------------- BLOOM on YES ---------------- */
+function bloom(){
+  const colors=['#c7553f','#da6a4f','#b8455a','#e8a86f'];
+  const wrap=document.createElement('div'); wrap.className='bloom'; document.body.appendChild(wrap);
+  const n=26;
+  for(let i=0;i<n;i++){
+    const sh=document.createElement('div'); sh.className='shard'; sh.style.background=colors[i%colors.length];
+    const ang=(Math.PI*2*i)/n + Math.random()*0.4; const dist=90+Math.random()*150;
+    const x=Math.cos(ang)*dist, y=Math.sin(ang)*dist;
+    sh.animate([
+      {transform:'translate(0,0) scale(1) rotate(0deg)',opacity:1},
+      {transform:`translate(${x}px,${y}px) scale(.2) rotate(${Math.random()*360}deg)`,opacity:0}
+    ],{duration:900+Math.random()*500, easing:'cubic-bezier(.23,1,.32,1)', fill:'forwards'});
+    wrap.appendChild(sh);
+  }
+  setTimeout(()=>wrap.remove(),1600);
+}
+
+/* ---------------- THE RUNAWAY "NO" BUTTON ----------------
+   Jumps to a random spot anywhere on the page the instant the cursor
+   touches it (or on click / tap / focus). Eased with easeOutCirc so each
+   leap shoots out then settles softly. It slows down a touch after the
+   first jump, never leaves the screen, and never disappears. */
+const noBtn=document.getElementById('noBtn');
+const TAUNTS=["No","Are you sure?","Not there","Try again","Almost","Nope","Catch me"];
+let taunt=0, fixed=false, moves=0, lastJump=0;
+const EASE_OUT_CIRC='cubic-bezier(0,.55,.45,1)';   // anime.js easeOutCirc
+const pad=18;
+const randInt=(num)=>Math.floor(Math.random()*(num+1));
+
+function ensureFixed(){
+  if(fixed) return;
+  const r=noBtn.getBoundingClientRect();
+  // Reparent to <body> so position:fixed uses true viewport coords
+  // (the card's transforms would otherwise hijack the coordinate space).
+  document.body.appendChild(noBtn);
+  noBtn.style.position='fixed'; noBtn.style.margin='0'; noBtn.style.zIndex='999';
+  noBtn.style.left=r.left+'px'; noBtn.style.top=r.top+'px';
+  fixed=true;
+}
+
+function jump(){
+  const now=performance.now();
+  if(now-lastJump<90) return;        // let each leap land before the next
+  lastJump=now;
+  ensureFixed();
+  moves++;
+  // a touch slower & dreamier after the first escape
+  const dur = moves===1 ? .5 : .68;
+  noBtn.style.transition='left '+dur+'s '+EASE_OUT_CIRC+', top '+dur+'s '+EASE_OUT_CIRC+', transform '+dur+'s '+EASE_OUT_CIRC;
+  const w=noBtn.offsetWidth, h=noBtn.offsetHeight;
+  const maxX=Math.max(pad, window.innerWidth  - w - pad);
+  const maxY=Math.max(pad, window.innerHeight - h - pad);
+  // Hop a short, random distance from where it sits now (stays nearby, never far)
+  const r=noBtn.getBoundingClientRect();
+  const RADIUS=150;                 // max travel per dodge
+  const ang=Math.random()*Math.PI*2;
+  const dist=70+Math.random()*(RADIUS-70);
+  const nx=Math.max(pad, Math.min(maxX, r.left+Math.cos(ang)*dist));
+  const ny=Math.max(pad, Math.min(maxY, r.top +Math.sin(ang)*dist));
+  noBtn.style.left=nx+'px'; noBtn.style.top=ny+'px';
+  noBtn.style.transform='rotate('+(Math.random()*10-5)+'deg)';
+  taunt=(taunt+1)%TAUNTS.length; noBtn.textContent=TAUNTS[taunt];
+}
+
+['mouseover','click','focus'].forEach(evt=>
+  noBtn.addEventListener(evt, (e)=>{ if(e&&e.preventDefault) e.preventDefault(); jump(); })
+);
+['touchstart','pointerdown'].forEach(evt=>
+  noBtn.addEventListener(evt, (e)=>{ e.preventDefault(); jump(); }, {passive:false})
+);
+window.addEventListener('resize', ()=>{
+  if(!fixed) return;
+  const r=noBtn.getBoundingClientRect();
+  noBtn.style.left=Math.max(pad, Math.min(r.left, window.innerWidth -r.width -pad))+'px';
+  noBtn.style.top =Math.max(pad, Math.min(r.top,  window.innerHeight-r.height-pad))+'px';
+});
+
+/* ---------------- YES → CELEBRATE ---------------- */
+document.getElementById('yesBtn').addEventListener('click', ()=>{ if(noBtn) noBtn.remove(); bloom(); setTimeout(()=>show('screen-celebrate'),120); });
+
+/* ---------------- START QUIZ ---------------- */
+document.getElementById('startQuiz').addEventListener('click', ()=>{ qIndex=0; renderQuestion(); show('screen-quiz'); });
+
+/* ---------------- QUIZ RENDER ---------------- */
+const optionsEl=document.getElementById('options');
+const questionText=document.getElementById('questionText');
+const qcount=document.getElementById('qcount');
+const qlabel=document.getElementById('qlabel');
+const progress=document.getElementById('progress');
+
+function renderQuestion(){
+  const item=QUESTIONS[qIndex];
+  qcount.textContent=String(qIndex+1).padStart(2,'0')+' / '+String(QUESTIONS.length).padStart(2,'0');
+  qlabel.textContent=item.label;
+  progress.style.width=(qIndex/QUESTIONS.length*100)+'%';
+  questionText.textContent=item.q;
+  optionsEl.innerHTML='';
+  item.options.forEach((opt,i)=>{
+    const b=document.createElement('button'); b.className='option';
+    b.innerHTML='<span class="idx">'+IDX[i]+'</span><span>'+opt+'</span>';
+    if(answers[item.key]===opt) b.classList.add('selected');
+    b.addEventListener('click', ()=>{
+      answers[item.key]=opt;
+      document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));
+      b.classList.add('selected');
+      setTimeout(nextQuestion,240);
+    });
+    optionsEl.appendChild(b);
+  });
+  document.getElementById('quizBack').style.visibility = qIndex===0 ? 'hidden':'visible';
+}
+function nextQuestion(){
+  if(qIndex < QUESTIONS.length-1){ qIndex++; renderQuestion(); }
+  else { progress.style.width='100%'; setDefaultDate(); show('screen-schedule'); }
+}
+document.getElementById('quizBack').addEventListener('click', ()=>{ if(qIndex>0){ qIndex--; renderQuestion(); }});
+
+/* ---------------- SCHEDULE ---------------- */
+function setDefaultDate(){
+  DP.setDefault();
+  TP.setDefault();
+}
+const submitBtn=document.getElementById('submitBtn');
+const errorMsg=document.getElementById('errorMsg');
+submitBtn.addEventListener('click', async ()=>{
+  const date=DP.value();
+  const time=TP.value();
+  const phone=document.getElementById('phone').value.trim();
+  const note=document.getElementById('note').value.trim();
+  errorMsg.style.display='none';
+  if(!date||!time) return showError("Pick a date and a time so I know when to plan for.");
+  if(!phone) return showError("Add a number so I can reach you.");
+  const payload={ answers, questions:QUESTIONS.map(q=>({question:q.q, answer:answers[q.key]||"(skipped)"})), date, time, phone, note, submittedAt:new Date().toString() };
+  submitBtn.disabled=true; submitBtn.innerHTML='<span class="spinner"></span>Sending';
+  try{
+    // Works on both hosts: Vercel serves /api/send, Netlify serves the function URL.
+    const ENDPOINTS=["/api/send","/.netlify/functions/send"];
+    let res=null, lastErr="";
+    for(const url of ENDPOINTS){
+      try{
+        const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(r.ok){ res=r; break; }
+        if(r.status!==404){ lastErr=(await r.text().catch(()=> ''))||('Request failed: '+r.status); break; }
+        lastErr='Endpoint not found (404)';
+      }catch(e){ lastErr=e.message||'Network error'; }
+    }
+    if(!res){ throw new Error(lastErr||'Request failed'); }
+    bloom(); show('screen-done');
+  }catch(err){
+    submitBtn.disabled=false; submitBtn.innerHTML='Send it to him';
+    showError("That didn't go through ("+(err.message||'error')+"). Try once more?");
+  }
+});
+function showError(m){ errorMsg.textContent=m; errorMsg.style.display='block'; }
+</script>
+</body>
+</html>
